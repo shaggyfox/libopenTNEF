@@ -8,7 +8,7 @@ CC=cc
 PLATFORM=-D___TNEF_BYTE_ORDER=4321 
 #CFLAGS = -O2 -ggdb
 CFLAGS = -O2  -Wall
-OBJS=logger.o tnef.o
+OBJS=logger.o tnef.o rtf_decompress.o
 
 all: $(OBJS) opentnef
 

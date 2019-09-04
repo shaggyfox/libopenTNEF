@@ -49,6 +49,8 @@
 #include "mapitags.h"
 #include "tnef_api.h"
 
+#include "rtf_decompress.h"
+
 #define VERSION "pldtnef/0.0.1"
 
 #ifndef FL
@@ -240,7 +242,7 @@ char *make_string(uint8 *tsp, int size)
 	static char s[256] = "";
 	int len = (size>sizeof(s)-1) ? sizeof(s)-1 : size;
 
-	strncpy(s,tsp, len);
+	strncpy(s, (char*)tsp, len);
 	s[len] = '\0';
 	return s;
 }
@@ -283,7 +285,7 @@ int handle_props(uint8 *tsp)
 			{
 				sprintf (filename, "XAM_%d.rtf", TNEF_glb.file_num);
 				TNEF_glb.file_num++;
-				save_attach_data(filename, tsp+bytes, num);
+                                rtf_decompress_to_file((char*)tsp+bytes, num, filename);
 			}
 			/* num + PAD */
 			bytes += num + ((num % 4) ? (4 - num%4) : 0);
