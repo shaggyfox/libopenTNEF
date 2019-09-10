@@ -100,18 +100,16 @@ static int intern_rtf_decompress(struct buffer* in_buff, int (*out_cb)(uint8_t, 
 
   struct rtfc_header head={0};
   if (read_header(in_buff, &head)) {
-    printf("error reading header\n");
+    fprintf(stderr, "error reading header\n");
     return -1;
   }
-  printf("compsize: %u\n"
-         "rawsize: %u\n", head.compsize, head.rawsize);
 
   out_cb(0, cb_data, head.rawsize);
   int running = 1;
   while(running) {
     uint8_t control;
     if (-1 == read_u8(in_buff, &control)) {
-      printf("error reading from buffer\n");
+      fprintf(stderr, "error reading from buffer\n");
       break;
     }
     for(int i = 1; i < 256; i *=2) {
@@ -119,7 +117,7 @@ static int intern_rtf_decompress(struct buffer* in_buff, int (*out_cb)(uint8_t, 
       if (0 == (control & i)) {
         /* read data from stream */
         if (read_u8(in_buff, &c)) {
-          printf("error reading from buffer\n");
+          fprintf(stderr, "error reading from buffer\n");
           running = 0;
           break;
         }
@@ -130,7 +128,7 @@ static int intern_rtf_decompress(struct buffer* in_buff, int (*out_cb)(uint8_t, 
         // read data from dictionary reference
         uint16_t ref = 0;
         if (read_u16_be(in_buff, &ref)) {
-          printf("error reading from buffer\n");
+          fprintf(stderr, "error reading from buffer\n");
           running = 0;
           break;
         }
@@ -208,7 +206,7 @@ static int open_buff(const char *filename, struct buffer *buff)
   struct stat st;
   buff->fd = open(filename, O_RDONLY);
   if (-1 == buff->fd) {
-    printf("error open file\n");
+    fprintf(stderr, "error open file\n");
     return -1;
   }
   fstat(buff->fd, &st);
