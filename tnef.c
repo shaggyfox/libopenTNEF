@@ -330,7 +330,12 @@ int handle_props(uint8 *tsp)
 			{
 				sprintf (filename, "XAM_%d.rtf", TNEF_glb.file_num);
 				TNEF_glb.file_num++;
-                                rtf_decompress_to_file((char*)tsp+bytes, num, filename);
+                                unsigned int length;
+                                char *out_buffer;
+                                if((out_buffer = rtf_decompress_to_buffer((char*)tsp+bytes, num, &length))) {
+                                  save_attach_data(filename, (uint8*)out_buffer, length);
+                                  free(out_buffer);
+                                }
 			}
 			/* num + PAD */
 			bytes += num + ((num % 4) ? (4 - num%4) : 0);

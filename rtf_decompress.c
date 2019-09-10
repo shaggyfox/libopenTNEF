@@ -8,14 +8,14 @@
 #include <stdio.h>
 #include "rtf_decompress.h"
 
-struct read_buff {
+struct buffer {
   int fd;
   uint8_t *buff;
   uint32_t size;
   uint32_t pos;
 };
 
-static int read_u32_le(struct read_buff *buff, uint32_t *ret)
+static int read_u32_le(struct buffer *buff, uint32_t *ret)
 {
   if (buff->pos + 4 > buff->size) {
     return -1;
@@ -29,7 +29,7 @@ static int read_u32_le(struct read_buff *buff, uint32_t *ret)
   return 0;
 }
 
-static int read_u16_be(struct read_buff *buff, uint16_t *ret)
+static int read_u16_be(struct buffer *buff, uint16_t *ret)
 {
   if (buff->pos + 2 > buff->size) {
     return -1;
@@ -43,7 +43,7 @@ static int read_u16_be(struct read_buff *buff, uint16_t *ret)
   return 0;
 }
 
-static int read_u8(struct read_buff *buff, uint8_t *ret)
+static int read_u8(struct buffer *buff, uint8_t *ret)
 {
   if (buff->pos >= buff->size) {
     return -1;
@@ -69,7 +69,7 @@ struct rtfc_header {
 };
 
 
-static int read_header(struct read_buff *buff, struct rtfc_header* header)
+static int read_header(struct buffer *buff, struct rtfc_header* header)
 {
   if (read_u32_le(buff, &header->compsize)) {
     return -1;
@@ -86,7 +86,7 @@ static int read_header(struct read_buff *buff, struct rtfc_header* header)
   return 0;
 }
 
-static int intern_rtf_decompress(struct read_buff* in_buff, int (*out_cb)(uint8_t, void *, uint32_t), void *cb_data) {
+static int intern_rtf_decompress(struct buffer* in_buff, int (*out_cb)(uint8_t, void *, uint32_t), void *cb_data) {
 
 
   /* init dict */
@@ -165,7 +165,7 @@ static int out_cb(uint8_t c, void *data, uint32_t length)
 
 int rtf_decompress_to_file(char *data, unsigned int len, const char *filename)
 {
-  struct read_buff buff = {0};
+  struct buffer buff = {0};
   buff.buff = (uint8_t *)data;
   buff.size = (uint32_t)len;
   int out_fd = open(filename, O_CREAT|O_TRUNC|O_WRONLY, 0666);
@@ -173,8 +173,37 @@ int rtf_decompress_to_file(char *data, unsigned int len, const char *filename)
   close(out_fd);
   return 0;
 }
+
+static int buffer_out_cb(uint8_t c, void *data, uint32_t length)
+{
+  struct buffer *buff = data;
+  if (length) {
+    buff->size = length;
+    buff->pos = 0;
+    buff->buff = calloc(1, buff->size);
+  } else {
+    if (buff->pos < buff->size) {
+      buff->buff[buff->pos++] = c;
+      return 1;
+    } else {
+      return -1;
+    }
+  }
+  return 0;
+}
+
+char *rtf_decompress_to_buffer(char *data, unsigned int len, unsigned int *out_len) {
+  struct buffer in_buff = {0};
+  in_buff.buff = (uint8_t *)data;
+  in_buff.size = (uint32_t)len;
+  struct buffer out_buff = {0};
+  intern_rtf_decompress(&in_buff, buffer_out_cb, &out_buff);
+  *out_len = out_buff.pos;
+  return (char*)out_buff.buff;
+}
+
 /*
-static int open_buff(const char *filename, struct read_buff *buff)
+static int open_buff(const char *filename, struct buffer *buff)
 {
   struct stat st;
   buff->fd = open(filename, O_RDONLY);
@@ -189,7 +218,7 @@ static int open_buff(const char *filename, struct read_buff *buff)
   return 0;
 }
 
-static int close_buff(struct read_buff *buff)
+static int close_buff(struct buffer *buff)
 {
   munmap(buff->buff, buff->size);
   close(buff->fd);
@@ -197,7 +226,7 @@ static int close_buff(struct read_buff *buff)
 }
 
 int main() {
-  struct read_buff buff;
+  struct buffer buff;
 
   if (open_buff("XAM_0.rtf", &buff)) {
     return -1;
