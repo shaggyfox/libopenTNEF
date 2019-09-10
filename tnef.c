@@ -75,7 +75,8 @@ struct TNEF_globals {
 	uint8 *tnef_limit;
 
 	int (*filename_decoded_report)(char *, char *);	// Pointer to our filename reporting function
-        int (*save_attach_data)(char *title, uint8 *tsp, uint32 size);
+        int (*save_attach_data)(char *title, uint8 *tsp, uint32 size, void*);
+        void *save_attach_data_cb_data;
 	
 };
 
@@ -83,7 +84,7 @@ static struct TNEF_globals TNEF_glb;
 
 int save_attach_data(char *title, uint8 *tsp, uint32 size)
 {
-  return TNEF_glb.save_attach_data(title, tsp, size);
+  return TNEF_glb.save_attach_data(title, tsp, size, TNEF_glb.save_attach_data_cb_data);
 }
 
 
@@ -96,7 +97,7 @@ Errors:
 ------------------------------------------------------------------------*/
 
 
-int save_attach_data_default_handler(char *title, uint8 *tsp, uint32 size)
+int save_attach_data_default_handler(char *title, uint8 *tsp, uint32 size, void *cb_data)
 {
 	FILE *out;
 	char filename[1024];
@@ -114,11 +115,6 @@ int save_attach_data_default_handler(char *title, uint8 *tsp, uint32 size)
 	fclose(out);
 	return 0;
 }
-
-
-
-
-
 
 
 // The variables below have been pushed into the TNEF globals
@@ -193,9 +189,10 @@ int TNEF_set_filename_report_fn( int (*ptr_to_fn)(char *, char *) )
 	return 0;
 }
 
-int TNEF_set_save_attach_data(int (*handler)(char *, char *, unsigned int))
+int TNEF_set_save_attach_data(int (*handler)(char *, char *, unsigned int, void *), void *cb_data)
 {
-  TNEF_glb.save_attach_data = (int (*)(char*, uint8*, uint32))handler;
+  TNEF_glb.save_attach_data = (int (*)(char*, uint8*, uint32, void*))handler;
+  TNEF_glb.save_attach_data_cb_data = cb_data;
   return 0;
 }
 
@@ -211,9 +208,6 @@ int TNEF_set_debug( int level )
 	TNEF_glb.debug = level;
 	return TNEF_glb.debug;
 }
-
-
-
 
 
 /* Some systems don't like to read unaligned data */
@@ -653,9 +647,9 @@ Input:
 Output:
 Errors:
 ------------------------------------------------------------------------*/
-int TNEF_decode_tnef(uint8 *tnef_stream, int size)
+int TNEF_decode_tnef(char *in_tnef_stream, int size)
 {
-
+        uint8 *tnef_stream = (uint8*)in_tnef_stream;
 	int ra_response;
 	uint8 *tsp;
 
@@ -804,7 +798,7 @@ int TNEF_decode( char *filename )
 
 	// Proceed to decode the file
 	//
-	TNEF_decode_tnef(tnef_stream,size);
+	TNEF_decode_tnef((char*)tnef_stream,size);
 
 	if (TNEF_glb.tnef_home) free(TNEF_glb.tnef_home);
 
