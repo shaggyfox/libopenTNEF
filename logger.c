@@ -320,7 +320,7 @@ int LOGGER_log( char *format, ...)
 			fprintf(stderr,"%s%s",output, lineend );
 			break;
 		case _LOGGER_SYSLOG:
-			syslog(_LOGGER_syslog_mode,output);
+			syslog(_LOGGER_syslog_mode,"%s", output);
 			break;
 		case _LOGGER_STDOUT:
 			fprintf(stdout,"%s%s",output, lineend);

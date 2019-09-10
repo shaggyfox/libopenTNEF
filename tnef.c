@@ -75,10 +75,51 @@ struct TNEF_globals {
 	uint8 *tnef_limit;
 
 	int (*filename_decoded_report)(char *, char *);	// Pointer to our filename reporting function
+        int (*save_attach_data)(char *title, uint8 *tsp, uint32 size);
 	
 };
 
 static struct TNEF_globals TNEF_glb;
+
+int save_attach_data(char *title, uint8 *tsp, uint32 size)
+{
+  return TNEF_glb.save_attach_data(title, tsp, size);
+}
+
+
+/*------------------------------------------------------------------------
+Procedure:     save_attach_data ID:1
+Purpose:
+Input:
+Output:
+Errors:
+------------------------------------------------------------------------*/
+
+
+int save_attach_data_default_handler(char *title, uint8 *tsp, uint32 size)
+{
+	FILE *out;
+	char filename[1024];
+
+	snprintf(filename, sizeof(filename),"%s/%s", TNEF_glb.path, title );
+
+	out = fopen(filename, "w");
+	if (!out)
+	{
+		LOGGER_log("%s:%d:TNEF_save_attach_data:ERROR: Failed opening file %s for writing (%s)\n", FL, filename, strerror(errno));
+		return -1;
+	}
+
+	fwrite(tsp, sizeof(uint8), size, out);
+	fclose(out);
+	return 0;
+}
+
+
+
+
+
+
 
 // The variables below have been pushed into the TNEF globals
 //int Verbose = FALSE;
@@ -96,7 +137,7 @@ int TNEF_init( void )
 	TNEF_glb.savedata = 1;
 	TNEF_glb.filename_decoded_report = NULL;
 	TNEF_glb.path[0] = '\0';
-
+        TNEF_glb.save_attach_data = &save_attach_data_default_handler;
 	return 0;
 }
 
@@ -152,7 +193,11 @@ int TNEF_set_filename_report_fn( int (*ptr_to_fn)(char *, char *) )
 	return 0;
 }
 
-
+int TNEF_set_save_attach_data(int (*handler)(char *, char *, unsigned int))
+{
+  TNEF_glb.save_attach_data = (int (*)(char*, uint8*, uint32))handler;
+  return 0;
+}
 
 /*------------------------------------------------------------------------
 Procedure:     TNEF_set_debug ID:1
@@ -330,35 +375,6 @@ int handle_props(uint8 *tsp)
 		x++;
 	}
 
-	return 0;
-}
-
-
-
-
-/*------------------------------------------------------------------------
-Procedure:     save_attach_data ID:1
-Purpose:
-Input:
-Output:
-Errors:
-------------------------------------------------------------------------*/
-int save_attach_data(char *title, uint8 *tsp, uint32 size)
-{
-	FILE *out;
-	char filename[1024];
-
-	snprintf(filename, sizeof(filename),"%s/%s", TNEF_glb.path, title );
-
-	out = fopen(filename, "w");
-	if (!out)
-	{
-		LOGGER_log("%s:%d:TNEF_save_attach_data:ERROR: Failed opening file %s for writing (%s)\n", FL, filename, strerror(errno));
-		return -1;
-	}
-
-	fwrite(tsp, sizeof(uint8), size, out);
-	fclose(out);
 	return 0;
 }
 

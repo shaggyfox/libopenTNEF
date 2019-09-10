@@ -7,10 +7,10 @@ CC=cc
 # endian
 PLATFORM=-D___TNEF_BYTE_ORDER=4321 
 #CFLAGS = -O2 -ggdb
-CFLAGS = -O2  -Wall
+CFLAGS = -fPIC -O2  -Wall
 OBJS=logger.o tnef.o rtf_decompress.o
 
-all: $(OBJS) opentnef
+all: opentnef libopentnef
 
 .c.o:
 	${CC} ${CFLAGS} $(PLATFORM) -c $*.c
@@ -21,8 +21,13 @@ default: opentnef
 opentnef: opentnef.c $(OBJS)
 	$(CC) $(CFLAGS) $(PLATFORM) $(OBJS) opentnef.c -o opentnef
 
-install: opentnef
-	cp opentnef /usr/local/bin
+libopentnef: ${OBJS}
+	$(CC) $(CFLAGS) $(PLATFORM) $(OBJS) -shared -o libopentnef.so
+
+install: opentnef libopentnef.so
+	cp opentnef /usr/bin
+	cp libopentnef.so /usr/lib
+	cp tnef_api.h /usr/include
 	
 clean:
 	rm -f *.o *.~[ch]
