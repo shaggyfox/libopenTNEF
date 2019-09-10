@@ -652,6 +652,8 @@ int TNEF_decode_tnef(char *in_tnef_stream, int size)
         uint8 *tnef_stream = (uint8*)in_tnef_stream;
 	int ra_response;
 	uint8 *tsp;
+	
+        TNEF_glb.tnef_limit = tnef_stream + size;
 
 	if (TNEF_DEBUG) LOGGER_log("%s:%d:TNEF_decode_tnef:DEBUG: Start. Size = %d\n", FL,size);
 
