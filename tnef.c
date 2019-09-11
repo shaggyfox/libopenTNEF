@@ -647,7 +647,7 @@ Input:
 Output:
 Errors:
 ------------------------------------------------------------------------*/
-int TNEF_decode_tnef(char *in_tnef_stream, int size)
+int TNEF_decode_tnef(const char *in_tnef_stream, int size)
 {
         uint8 *tnef_stream = (uint8*)in_tnef_stream;
 	int ra_response;
